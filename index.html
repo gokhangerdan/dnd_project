@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Workflow Builder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="topBar">
+        <button id="runBtn">Run</button>
+        <button id="pauseBtn">Pause</button>
+        <button id="resetBtn">Reset</button>
+    </div>
+    <div id="drawer"></div>
+    <div id="workspace">
+        <canvas id="gridCanvas"></canvas>
+        <svg id="connections">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                        refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#1976d2" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+    <div id="rightDrawer" style="display:none;">
+        <h3>Node Properties</h3>
+        <form id="nodePropertiesForm">
+            <label>
+                Name:
+                <input type="text" id="nodeName" />
+            </label>
+            <br>
+            <label>
+                Type:
+                <input type="text" id="nodeType" readonly />
+            </label>
+            <br>
+            
+            <!-- API Configuration (only shown for process nodes) -->
+            <div id="apiConfig" style="display:none;">
+                <h4>API Configuration</h4>
+                <label>
+                    URL:
+                    <input type="text" id="apiUrl" placeholder="https://jsonplaceholder.typicode.com/todos/1" />
+                </label>
+                <br>
+                <label>
+                    Method:
+                    <select id="apiMethod">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="PATCH">PATCH</option>
+                    </select>
+                </label>
+                <br>
+                <label>
+                    Headers (JSON format):
+                    <textarea id="apiHeaders" rows="3" placeholder='{"Content-Type": "application/json"}'></textarea>
+                </label>
+                <br>
+                <label>
+                    Body (for POST/PUT/PATCH):
+                    <textarea id="apiBody" rows="4" placeholder='{"key": "value"}'></textarea>
+                </label>
+                <br>
+                <label>
+                    Timeout (seconds):
+                    <input type="number" id="apiTimeout" value="30" min="1" max="300" />
+                </label>
+                <br>
+            </div>
+            
+            <button type="button" id="closeRightDrawer">Close</button>
+        </form>
+    </div>
+    <div id="terminal">
+        <div id="terminalHeader">
+            <span>Terminal</span>
+            <button id="clearTerminal">Clear</button>
+        </div>
+        <div id="terminalContent"></div>
+    </div>
+    <script src="drawer.js"></script>
+    <script src="workspace.js"></script>
+    <script src="terminal.js"></script>
+    <script src="nodeManager.js"></script>
+    <script src="connectionManager.js"></script>
+    <script src="executionManager.js"></script>
+    <script src="workflow.js"></script>
+</body>
+</html>

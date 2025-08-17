@@ -12,6 +12,8 @@ class WorkflowManager {
         this.tempLine = null;
         this.offsetX = 0;
         this.offsetY = 0;
+        this.panX = 0;
+        this.panY = 0;
         
         this.workspace = document.getElementById('workspace');
         this.connectionsSvg = document.getElementById('connections');
@@ -67,7 +69,7 @@ class WorkflowManager {
         this.nodes.push(nodeObj);
         this.attachNodeEventListeners(nodeObj);
         this.workspace.appendChild(nodeElement);
-        this.renderConnections();
+        this.applyPan(this.panX, this.panY); // Apply current pan to new node
         
         // Log node creation
         if (window.terminalManager) {
@@ -119,6 +121,19 @@ class WorkflowManager {
             const rightConnector = this.createConnector('right');
             nodeElement.appendChild(rightConnector);
         }
+
+        // Add delete button
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'delete-btn';
+        deleteButton.innerHTML = '&#10006;'; // Unicode for a clear "X" icon
+        deleteButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const nodeObj = this.nodes.find(node => node.element === nodeElement);
+            if (nodeObj) {
+                this.deleteNode(nodeObj);
+            }
+        });
+        nodeElement.appendChild(deleteButton);
 
         return nodeElement;
     }
@@ -234,6 +249,31 @@ class WorkflowManager {
         this.removeTempLine();
     }
 
+    deleteNode(nodeObj) {
+        // Remove connections associated with the node
+        this.connections = this.connections.filter(conn => conn.from !== nodeObj && conn.to !== nodeObj);
+        this.renderConnections();
+
+        // Remove the node element from the DOM
+        if (nodeObj.element.parentNode) {
+            nodeObj.element.parentNode.removeChild(nodeObj.element);
+        }
+
+        // Remove the node from the nodes array
+        this.nodes = this.nodes.filter(node => node !== nodeObj);
+
+        // Clear selection if the deleted node was selected
+        if (this.selectedNode === nodeObj) {
+            this.selectedNode = null;
+            this.hideNodeProperties();
+        }
+
+        // Log node deletion
+        if (window.terminalManager) {
+            window.terminalManager.warning(`Deleted node: ${nodeObj.name}`);
+        }
+    }
+
     attachGlobalEventListeners() {
         document.addEventListener('mousemove', (event) => {
             if (this.movingNode) {
@@ -256,12 +296,19 @@ class WorkflowManager {
                 this.deselectAll();
             }
         });
+
+        // Add keyboard shortcut for deleting selected nodes
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Delete' && this.selectedNode) {
+                this.deleteNode(this.selectedNode);
+            }
+        });
     }
 
     handleNodeMovement(event) {
         const rect = this.workspace.getBoundingClientRect();
-        let x = event.clientX - rect.left - this.offsetX + this.movingNode.element.offsetWidth / 2;
-        let y = event.clientY - rect.top - this.offsetY + this.movingNode.element.offsetHeight / 2;
+        let x = event.clientX - rect.left - this.offsetX + this.movingNode.element.offsetWidth / 2 - this.panX;
+        let y = event.clientY - rect.top - this.offsetY + this.movingNode.element.offsetHeight / 2 - this.panY;
         
         // Snap to grid
         x = Math.round(x / 50) * 50;
@@ -269,8 +316,8 @@ class WorkflowManager {
         
         this.movingNode.x = x;
         this.movingNode.y = y;
-        this.movingNode.element.style.left = `${x}px`;
-        this.movingNode.element.style.top = `${y}px`;
+        this.movingNode.element.style.left = `${x + this.panX}px`;
+        this.movingNode.element.style.top = `${y + this.panY}px`;
         
         // Update connections in real-time during movement
         this.renderConnections();
@@ -382,11 +429,11 @@ class WorkflowManager {
         // Use stored coordinates for consistency
         let fromX, fromY;
         if (this.connectingFrom.connector.classList.contains('right')) {
-            fromX = fromNode.x + 120; // right connector
-            fromY = fromNode.y + 20;
+            fromX = fromNode.x + 120 + this.panX; // right connector
+            fromY = fromNode.y + 20 + this.panY;
         } else {
-            fromX = fromNode.x - 8;   // left connector
-            fromY = fromNode.y + 20;
+            fromX = fromNode.x - 8 + this.panX;   // left connector
+            fromY = fromNode.y + 20 + this.panY;
         }
         
         const x2 = event.clientX - wsRect.left;
@@ -427,10 +474,10 @@ class WorkflowManager {
         const toNode = connection.to;
         
         // Calculate connector positions based on node positions
-        const fromX = fromNode.x + 120; // node width + right connector offset
-        const fromY = fromNode.y + 20;  // half node height
-        const toX = toNode.x - 8;       // left connector offset
-        const toY = toNode.y + 20;      // half node height
+        const fromX = fromNode.x + 120 + this.panX; // node width + right connector offset
+        const fromY = fromNode.y + 20 + this.panY;  // half node height
+        const toX = toNode.x - 8 + this.panX;       // left connector offset
+        const toY = toNode.y + 20 + this.panY;      // half node height
         
         console.log('Connection coordinates:', { fromX, fromY, toX, toY });
         console.log('SVG dimensions:', this.connectionsSvg.clientWidth, this.connectionsSvg.clientHeight);
@@ -894,6 +941,8 @@ class WorkflowManager {
         this.currentExecutingNode = null;
         this.updateRunButton(false);
         this.updatePauseButton(true);
+        this.panX = 0;
+        this.panY = 0;
         
         this.nodes.forEach(node => {
             if (node.element.parentNode) {
@@ -911,6 +960,18 @@ class WorkflowManager {
         if (window.terminalManager) {
             window.terminalManager.warning('Workflow reset - all nodes and connections cleared');
         }
+    }
+
+    applyPan(panX, panY) {
+        this.panX = panX;
+        this.panY = panY;
+
+        this.nodes.forEach(node => {
+            node.element.style.left = `${node.x + panX}px`;
+            node.element.style.top = `${node.y + panY}px`;
+        });
+
+        this.renderConnections();
     }
 }
 

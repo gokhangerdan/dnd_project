@@ -45,6 +45,21 @@ class NodeManager {
             nodeElement.appendChild(rightConnector);
         }
 
+        // Add delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '×';
+        deleteBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (window.workflowManager) {
+                const nodeObj = window.workflowManager.nodes.find(node => node.element === nodeElement);
+                if (nodeObj) {
+                    window.workflowManager.deleteNode(nodeObj);
+                }
+            }
+        });
+        nodeElement.appendChild(deleteBtn);
+
         return nodeElement;
     }
 

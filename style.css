@@ -149,6 +149,7 @@ body {
     bottom: 200px; /* Leave space for terminal */
     background: #fafafa;
     overflow: hidden;
+    cursor: default;
 }
 
 /* Terminal Styles */
@@ -255,6 +256,40 @@ body {
 .node:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.node .delete-btn {
+    position: absolute;
+    top: -10px; /* Move outside the top */
+    left: -10px; /* Move outside the left */
+    width: 16px; /* Smaller size */
+    height: 16px; /* Smaller size */
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 12px; /* Smaller font size */
+    font-weight: bold;
+    cursor: pointer;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.node.selected .delete-btn {
+    display: flex; /* Show only when the node is selected */
+}
+
+.node .delete-btn:hover {
+    background: #d32f2f;
+    transform: scale(1.2);
+}
+
+.node .delete-btn:active {
+    transform: scale(1);
 }
 
 .workspace-node {

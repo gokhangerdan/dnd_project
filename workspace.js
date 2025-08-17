@@ -8,6 +8,11 @@ class WorkspaceManager {
         this.workspace = document.getElementById('workspace');
         this.gridCanvas = document.getElementById('gridCanvas');
         this.isRunning = false;
+        this.panX = 0;
+        this.panY = 0;
+        this.isPanning = false;
+        this.lastPanX = 0;
+        this.lastPanY = 0;
         
         this.init();
     }
@@ -37,8 +42,11 @@ class WorkspaceManager {
         ctx.strokeStyle = '#e0e0e0';
         ctx.lineWidth = 1;
         
+        const offsetX = this.panX % this.gridSize;
+        const offsetY = this.panY % this.gridSize;
+
         // Draw vertical lines
-        for (let x = 0; x < this.gridCanvas.width; x += this.gridSize) {
+        for (let x = offsetX; x < this.gridCanvas.width; x += this.gridSize) {
             ctx.beginPath();
             ctx.moveTo(x, 0);
             ctx.lineTo(x, this.gridCanvas.height);
@@ -46,7 +54,7 @@ class WorkspaceManager {
         }
         
         // Draw horizontal lines
-        for (let y = 0; y < this.gridCanvas.height; y += this.gridSize) {
+        for (let y = offsetY; y < this.gridCanvas.height; y += this.gridSize) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(this.gridCanvas.width, y);
@@ -57,6 +65,46 @@ class WorkspaceManager {
     attachEventListeners() {
         this.workspace.addEventListener('dragover', this.handleDragOver.bind(this));
         this.workspace.addEventListener('drop', this.handleDrop.bind(this));
+        this.workspace.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        this.workspace.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        this.workspace.addEventListener('mouseup', this.handleMouseUp.bind(this));
+        this.workspace.addEventListener('mouseleave', this.handleMouseUp.bind(this)); // Stop panning if mouse leaves
+    }
+
+    handleMouseDown(event) {
+        if (window.workflowManager && window.workflowManager.isWorkspaceClick(event)) {
+            this.isPanning = true;
+            this.lastPanX = event.clientX;
+            this.lastPanY = event.clientY;
+            this.workspace.style.cursor = 'grabbing';
+        }
+    }
+
+    handleMouseMove(event) {
+        if (this.isPanning) {
+            const dx = event.clientX - this.lastPanX;
+            const dy = event.clientY - this.lastPanY;
+
+            this.panX += dx;
+            this.panY += dy;
+
+            this.lastPanX = event.clientX;
+            this.lastPanY = event.clientY;
+
+            this.applyPan();
+        }
+    }
+
+    handleMouseUp() {
+        this.isPanning = false;
+        this.workspace.style.cursor = 'default';
+    }
+
+    applyPan() {
+        this.drawGrid();
+        if (window.workflowManager) {
+            window.workflowManager.applyPan(this.panX, this.panY);
+        }
     }
 
     handleDragOver(event) {
@@ -70,8 +118,8 @@ class WorkspaceManager {
         if (!window.draggedNodeType) return;
         
         const rect = this.workspace.getBoundingClientRect();
-        let x = event.clientX - rect.left;
-        let y = event.clientY - rect.top;
+        let x = event.clientX - rect.left - this.panX;
+        let y = event.clientY - rect.top - this.panY;
         
         // Snap to grid
         x = Math.round(x / this.gridSize) * this.gridSize;
@@ -111,6 +159,9 @@ class WorkspaceManager {
         if (window.workflowManager) {
             window.workflowManager.resetWorkflow();
         }
+        this.panX = 0;
+        this.panY = 0;
+        this.applyPan();
         console.log('Workflow reset');
     }
 }
